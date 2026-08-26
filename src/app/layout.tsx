@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+
+import { Geist_Mono, Geist } from "next/font/google";
+
+import { BreadcrumbProvider } from "@/components/custom/breadcrumb";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "@/providers/theme";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,7 +30,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <TooltipProvider>
+          <ThemeProvider defaultTheme="system">
+            <BreadcrumbProvider>{children}</BreadcrumbProvider>
+          </ThemeProvider>
+        </TooltipProvider>
+      </body>
     </html>
   );
 }

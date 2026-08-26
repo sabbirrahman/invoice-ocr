@@ -1,4 +1,4 @@
-import { generateText, Output } from "ai";
+import { type FilePart, generateText, Output } from "ai";
 import { getModel } from "@/lib/ai/model";
 import {
   EXTRACTION_SYSTEM_PROMPT,
@@ -15,6 +15,14 @@ export type ExtractInput = {
   filename?: string;
 };
 
+function mediaTypeFor(input: ExtractInput): string {
+  const isPdf =
+    input.mediaType === "application/pdf" ||
+    input.filename?.toLowerCase().endsWith(".pdf");
+  if (isPdf) return "application/pdf";
+  return input.mediaType || "image/jpeg";
+}
+
 /**
  * Structured invoice extraction via the Vercel AI SDK.
  * Model/provider come from getModel() (env-swappable).
@@ -25,21 +33,16 @@ export type ExtractInput = {
 export async function extractInvoice(
   input: ExtractInput,
 ): Promise<ExtractedInvoice> {
-  const isPdf =
-    input.mediaType === "application/pdf" ||
-    input.filename?.toLowerCase().endsWith(".pdf");
+  const mediaType = mediaTypeFor(input);
 
-  const filePart = isPdf
-    ? {
-        type: "file" as const,
-        data: input.bytes,
-        mediaType: "application/pdf" as const,
-      }
-    : {
-        type: "image" as const,
-        image: input.bytes,
-        mediaType: input.mediaType || "image/jpeg",
-      };
+  // AI SDK 7 FilePart: type is required. Buffer satisfies the Zod schema
+  // more reliably than a cross-realm Uint8Array in Next.js.
+  const filePart: FilePart = {
+    type: "file",
+    data: Buffer.from(input.bytes),
+    mediaType,
+    filename: input.filename,
+  };
 
   const { output } = await generateText({
     model: getModel(),

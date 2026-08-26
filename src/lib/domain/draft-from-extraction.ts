@@ -29,7 +29,7 @@ export function draftFromExtraction(
     return {
       description: line.description?.trim() || "(no description)",
       quantity: toInt(line.quantity),
-      unit: line.unit?.trim() || "式",
+      unit: line.unit?.trim() || (line.quantity != null ? "個" : "式"),
       unit_price: toInt(line.unit_price),
       amount,
       tax_code: taxCodeFromHint(line.tax_rate_hint),

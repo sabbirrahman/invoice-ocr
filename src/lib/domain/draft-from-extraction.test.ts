@@ -1,10 +1,10 @@
-import type { ExtractedInvoice } from "@/lib/domain/schema";
+import { describe, expect, it } from "vitest";
 
 import {
   draftFromExtraction,
   taxCodeFromHint,
 } from "@/lib/domain/draft-from-extraction";
-import { describe, expect, it } from "vitest";
+import type { ExtractedInvoice } from "@/lib/domain/schema";
 
 const extracted: ExtractedInvoice = {
   supplier_name: "株式会社山田製作所",
@@ -59,5 +59,25 @@ describe("draftFromExtraction", () => {
     expect(draft.tax_amount).toBe(16800);
     expect(draft.total_amount).toBe(184800);
     expect(draft.lines.every((line) => line.tax_code === "T10")).toBe(true);
+  });
+
+  it("defaults unit to 個 when quantity is present and unit is missing", () => {
+    const draft = draftFromExtraction(
+      {
+        ...extracted,
+        lines: [
+          {
+            description: "part",
+            quantity: 2,
+            unit: null,
+            unit_price: 100,
+            amount: 200,
+            tax_rate_hint: 10,
+          },
+        ],
+      },
+      "P-1001",
+    );
+    expect(draft.lines[0]?.unit).toBe("個");
   });
 });

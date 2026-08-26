@@ -1,14 +1,14 @@
 import type { IntakeJob } from "@/lib/domain/schema";
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
 import { basename, join } from "node:path";
 
-import { deriveStatus, verifyDraft } from "@/lib/domain/verify";
+import { statusFromIssues, buildJobIssues } from "@/lib/intake/issues";
 import { draftFromExtraction } from "@/lib/domain/draft-from-extraction";
 import { newJobId, saveJob } from "@/lib/store";
 import { extractInvoice } from "@/lib/ai/extract";
-import { listPartners } from "@/lib/accounting/client";
 import { matchPartner } from "@/lib/domain/match-partner";
+import { listPartners } from "@/lib/accounting/client";
 
 const UPLOAD_DIR = join(process.cwd(), "uploads");
 
@@ -70,40 +70,20 @@ export async function processInvoiceBytes(input: {
     });
     const draft = draftFromExtraction(extracted, partnerMatch.partner_code);
 
-    const lowConfidence =
-      extracted.overall_confidence === "low" ||
-      Object.values(extracted.field_confidence).includes("low");
-
-    const issues = verifyDraft(draft, {
-      printed_subtotal: extracted.printed_subtotal,
-      printed_tax_amount: extracted.printed_tax_amount,
-      printed_total: extracted.printed_total,
-    });
-
-    if (lowConfidence) {
-      issues.push({
-        code: "LOW_CONFIDENCE",
-        severity: "warning",
-        message:
-          "Model reported low confidence on one or more fields — please review carefully",
-      });
-    }
-
-    if (extracted.handwritten_notes.length) {
-      issues.push({
-        code: "HANDWRITTEN_NOTES",
-        severity: "warning",
-        message: `Handwriting detected: ${extracted.handwritten_notes.join("; ")}`,
-      });
-    }
-
     job = {
       ...job,
       extracted,
       draft,
       partner_match: partnerMatch,
+      updated_at: new Date().toISOString(),
+    };
+    saveJob(job);
+
+    const issues = await buildJobIssues(job);
+    job = {
+      ...job,
       issues,
-      status: deriveStatus(issues),
+      status: statusFromIssues(issues),
       updated_at: new Date().toISOString(),
     };
   } catch (err) {

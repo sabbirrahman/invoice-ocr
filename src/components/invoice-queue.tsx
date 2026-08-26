@@ -42,6 +42,10 @@ function blockerCount(job: IntakeJob): number {
   return job.issues.filter((i) => i.severity === "blocker").length;
 }
 
+function warningCount(job: IntakeJob): number {
+  return job.issues.filter((i) => i.severity === "warning").length;
+}
+
 export function InvoiceQueue() {
   const [jobs, setJobs] = useState<IntakeJob[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -203,7 +207,7 @@ export function InvoiceQueue() {
                 <TableHead>Partner</TableHead>
                 <TableHead>Invoice #</TableHead>
                 <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Blockers</TableHead>
+                <TableHead className="text-right">Flags</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -223,6 +227,7 @@ export function InvoiceQueue() {
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {blockerCount(job)}
+                    {warningCount(job) ? ` / ${warningCount(job)} warn` : ""}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="link" size="sm" asChild>

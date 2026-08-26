@@ -7,6 +7,7 @@ Rules:
 - supplier_name is the issuer / seller (not the buyer 御中).
 - supplier_registration_no is 登録番号 when present (often starts with T).
 - For each line, set tax_rate_hint to 10 or 8 when the document shows 税率 / 消費税区分; otherwise null.
+- Extract 単位 when printed (個, 箱, 式, kg, …). Leave unit null only when the document has no unit.
 - quantity and unit_price may be null when the document only shows a lump amount.
 - Record any handwritten annotations in handwritten_notes; do not invent line items from handwriting unless clearly a correction to a printed line.
 - Set overall_confidence and field_confidence honestly (low for blurry scans, ambiguous fields, or handwriting).

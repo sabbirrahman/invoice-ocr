@@ -200,7 +200,11 @@ export function verifyDraft(
     issues.push({
       code: "PRINTED_TOTAL_DIFFERS",
       severity: "warning",
-      message: "Draft total differs from the total printed on the invoice",
+      message:
+        options.printed_total - draft.total_amount === 1 ||
+        draft.total_amount - options.printed_total === 1
+          ? "Draft total is ¥1 off the printed total (likely floor-rounding of consumption tax). The accounting API uses floor tax, so we keep the recalculated total."
+          : "Draft total differs from the total printed on the invoice",
       field: "total_amount",
       details: {
         printed_total: options.printed_total,

@@ -1,52 +1,56 @@
 "use client";
 
-import { GalleryVerticalEndIcon, FileIcon } from "lucide-react";
-import * as React from "react";
-
+import { FileIcon, GalleryVerticalEndIcon } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import type * as React from "react";
+import { UserMenu } from "@/components/layout/user-menu";
 import {
-  SidebarMenuButton,
-  SidebarGroupLabel,
-  SidebarMenuItem,
+  Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader,
   SidebarGroup,
-  SidebarRail,
+  SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
-  Sidebar,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
 } from "@/components/ui/sidebar";
-import { UserMenu } from "@/components/layout/user-menu";
 
 const dummyUser = {
   name: "John Doe",
   email: "john.doe@acme.com",
   avatar: "/avatars/shadcn.jpg",
 };
+
 const menuItems = [
   {
     name: "Invoice Intake",
-    url: "#",
+    url: "/dashboard",
     icon: <FileIcon />,
   },
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname();
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem></SidebarMenuItem>
-        </SidebarMenu>
         <SidebarMenuButton
           size="lg"
           className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+          asChild
         >
-          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <GalleryVerticalEndIcon />
-          </div>
-          <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-medium">Acme Inc.</span>
-          </div>
+          <Link href="/dashboard">
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+              <GalleryVerticalEndIcon />
+            </div>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-medium">Sample Trading</span>
+            </div>
+          </Link>
         </SidebarMenuButton>
       </SidebarHeader>
 
@@ -56,11 +60,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.name}>
-                <SidebarMenuButton asChild>
-                  <a href={item.url}>
+                <SidebarMenuButton asChild isActive={pathname === item.url}>
+                  <Link href={item.url}>
                     {item.icon}
                     <span>{item.name}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}

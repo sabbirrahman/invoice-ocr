@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePageBreadcrumb } from "@/components/custom/breadcrumb";
+import { InvoiceReview } from "@/components/invoice-review";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +12,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -51,7 +59,14 @@ export function InvoiceQueue() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"upload" | "samples" | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
+  const [reviewId, setReviewId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  usePageBreadcrumb({
+    label: "Invoice Intake",
+    link: "/dashboard",
+    index: 0,
+  });
 
   const refresh = useCallback(async () => {
     const res = await fetch("/api/invoices");
@@ -131,24 +146,23 @@ export function InvoiceQueue() {
     }
   }
 
-  return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-10">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Invoice Intake
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Extract with AI, verify amounts, then review before registering into
-          the accounting API. Nothing is posted automatically.
-        </p>
-      </header>
+  const onJobChange = useCallback((updated: IntakeJob) => {
+    setJobs((current) =>
+      current.map((job) => (job.id === updated.id ? updated : job)),
+    );
+  }, []);
 
+  const reviewing = jobs.find((job) => job.id === reviewId);
+
+  return (
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-4">
       <Card>
         <CardHeader>
           <CardTitle>Add invoices</CardTitle>
           <CardDescription>
             Upload a PDF or scan, or run the twelve sample invoices from{" "}
-            <code className="font-mono text-xs">invoices/</code>.
+            <code className="font-mono text-xs">invoices/</code>. Nothing is
+            posted until you review and register.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-3">
@@ -189,7 +203,7 @@ export function InvoiceQueue() {
         </p>
       ) : null}
 
-      <Card>
+      <Card className="min-h-0 flex-1">
         <CardHeader>
           <CardTitle>Queue</CardTitle>
           <CardDescription>
@@ -208,7 +222,7 @@ export function InvoiceQueue() {
                 <TableHead>Invoice #</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="text-right">Flags</TableHead>
-                <TableHead />
+                <TableHead className="text-right"> </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -230,8 +244,12 @@ export function InvoiceQueue() {
                     {warningCount(job) ? ` / ${warningCount(job)} warn` : ""}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="link" size="sm" asChild>
-                      <Link href={`/invoices/${job.id}`}>Review</Link>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => setReviewId(job.id)}
+                    >
+                      Review
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -240,6 +258,34 @@ export function InvoiceQueue() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog
+        open={reviewId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setReviewId(null);
+            void refresh();
+          }
+        }}
+      >
+        <DialogContent className="flex h-[min(92vh,56rem)] w-[min(96vw,88rem)] max-w-[min(96vw,88rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,88rem)]">
+          <DialogHeader className="shrink-0 border-b px-6 py-4 pr-12">
+            <DialogTitle className="font-mono text-base">
+              {reviewing?.source_filename ?? "Review invoice"}
+            </DialogTitle>
+            <DialogDescription>
+              Compare the original to the draft, correct if needed, then
+              register. Totals are recalculated the same way the accounting API
+              does.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+            {reviewId ? (
+              <InvoiceReview id={reviewId} onJobChange={onJobChange} />
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

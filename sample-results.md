@@ -1,4 +1,6 @@
-# Sample invoice results (scratch for SUBMISSION.md §6)
+# Sample invoice results
+
+Canonical write-up is [SUBMISSION.md](./SUBMISSION.md) §6. Scratch copy of the 12-file run:
 
 Captured from a run of the 12 bundled samples. Status is after extraction +
 deterministic verify, before human register.

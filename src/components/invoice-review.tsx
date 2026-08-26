@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,7 +81,13 @@ function untagDraft(draft: FormDraft): InvoiceDraft {
   });
 }
 
-export function InvoiceReview({ id }: { id: string }) {
+export function InvoiceReview({
+  id,
+  onJobChange,
+}: {
+  id: string;
+  onJobChange?: (job: IntakeJob) => void;
+}) {
   const [job, setJob] = useState<IntakeJob | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [draft, setDraft] = useState<FormDraft | null>(null);
@@ -173,6 +178,7 @@ export function InvoiceReview({ id }: { id: string }) {
       }
       setJob(body.job);
       if (body.job.draft) setDraft(tagDraft(body.job.draft));
+      onJobChange?.(body.job);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -199,6 +205,7 @@ export function InvoiceReview({ id }: { id: string }) {
       }
       setJob(saved.job);
       if (saved.job.draft) setDraft(tagDraft(saved.job.draft));
+      onJobChange?.(saved.job);
       if (
         saved.job.status !== "ready" ||
         saved.job.issues.some((i) => i.severity === "blocker")
@@ -218,12 +225,14 @@ export function InvoiceReview({ id }: { id: string }) {
         if (body.job) {
           setJob(body.job);
           if (body.job.draft) setDraft(tagDraft(body.job.draft));
+          onJobChange?.(body.job);
         }
         throw new Error(body.message ?? body.error ?? "Register failed");
       }
       if (body.job) {
         setJob(body.job);
         if (body.job.draft) setDraft(tagDraft(body.job.draft));
+        onJobChange?.(body.job);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Register failed");
@@ -233,38 +242,22 @@ export function InvoiceReview({ id }: { id: string }) {
   }
 
   if (!job && !error) {
-    return (
-      <main className="mx-auto max-w-5xl px-6 py-16 text-sm text-muted-foreground">
-        Loading…
-      </main>
-    );
+    return <p className="text-muted-foreground py-8 text-sm">Loading…</p>;
   }
 
   if (!job) {
     return (
-      <main className="mx-auto max-w-xl px-6 py-16">
-        <Link href="/" className="text-sm underline-offset-4 hover:underline">
-          ← Queue
-        </Link>
-        <p className="mt-4 text-destructive text-sm">{error}</p>
-      </main>
+      <p className="text-destructive py-8 text-sm" role="alert">
+        {error}
+      </p>
     );
   }
 
   const isPdf = job.media_type === "application/pdf";
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 py-8">
-      <p className="text-muted-foreground text-sm">
-        <Link href="/" className="underline-offset-4 hover:underline">
-          ← Queue
-        </Link>
-      </p>
-
+    <div className="flex w-full flex-col gap-4">
       <header className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-semibold tracking-tight">
-          {job.source_filename}
-        </h1>
         {statusBadge(job.status)}
         {job.accounting_id ? (
           <span className="font-mono text-muted-foreground text-xs">
@@ -329,14 +322,14 @@ export function InvoiceReview({ id }: { id: string }) {
               <iframe
                 title={job.source_filename}
                 src={job.document_url}
-                className="h-[70vh] w-full rounded-md border border-border bg-muted"
+                className="h-[min(50vh,28rem)] w-full rounded-md border border-border bg-muted"
               />
             ) : (
               // biome-ignore lint/performance/noImgElement: invoice scan from our own API
               <img
                 alt={job.source_filename}
                 src={job.document_url}
-                className="max-h-[70vh] w-full rounded-md border border-border object-contain bg-muted"
+                className="max-h-[min(50vh,28rem)] w-full rounded-md border border-border bg-muted object-contain"
               />
             )}
           </CardContent>

@@ -45,3 +45,4 @@ next-env.d.ts
 
 # Sample PDFs/JPGs at the repo root only — not src/app/**/invoices routes
 /invoices
+SUBMISSION.md

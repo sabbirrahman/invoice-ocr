@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently -k -n api,web -c blue,green \"python3 accounting_api.py\" \"next dev\"",
+    "dev:web": "next dev",
+    "dev:api": "python3 accounting_api.py",
     "build": "next build",
     "start": "next start",
     "lint": "biome check",
@@ -21,6 +23,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "concurrently": "^10.0.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

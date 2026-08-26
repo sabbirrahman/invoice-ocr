@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Invoice Intake
 
-## Getting Started
+Human-in-the-loop invoice intake for Sample Trading Co.: extract Japanese invoices with an LLM, verify amounts deterministically, let a person review, then register into the existing accounting API.
 
-First, run the development server:
+## Requirements
+
+- Node.js 20+
+- pnpm
+- Python 3.9+ (stdlib only — no pip install)
+- An LLM API key (Gemini by default; used in later batches)
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
+# Set GOOGLE_GENERATIVE_AI_API_KEY in .env.local (needed once extraction lands)
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Run (single command)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This starts:
 
-## Learn More
+1. Mock accounting API at [http://localhost:8080](http://localhost:8080)
+2. Next.js app at [http://localhost:3000](http://localhost:3000)
 
-To learn more about Next.js, take a look at the following resources:
+Verify the accounting API:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+curl http://localhost:8080/health
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Sample invoices
 
-## Deploy on Vercel
+Twelve sample invoices live in `invoices/` (PDFs with text layers, scanned images, and one scanned PDF).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Command | Purpose |
+|---|---|
+| `pnpm dev` | Accounting API + Next.js (recommended) |
+| `pnpm dev:web` | Next.js only |
+| `pnpm dev:api` | Accounting API only |
+| `pnpm build` | Production build |
+
+## Notes
+
+- The mock accounting API (`accounting_api.py`) is copied from the take-home brief and must not be modified.
+- Registered invoices are in-memory; restart the API or `DELETE /invoices` to reset.

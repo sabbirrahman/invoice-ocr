@@ -113,10 +113,6 @@ export async function listInvoices(): Promise<RegisteredInvoice[]> {
   return data.invoices;
 }
 
-export async function clearInvoices(): Promise<{ removed: number }> {
-  return request("/invoices", { method: "DELETE" });
-}
-
 export async function registerInvoice(
   payload: AccountingInvoicePayload,
 ): Promise<RegisteredInvoice> {

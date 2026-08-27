@@ -17,7 +17,7 @@ cp .env.example .env
 pnpm install
 ```
 
-Put the 12 sample files in `invoices/` at the repo root (they are gitignored; copy them from the assignment pack if they are not already there).
+The assignment pack includes 12 sample invoices. Upload them from the dashboard — the app does not read a bundled `invoices/` folder.
 
 | Variable                       | Purpose                                                |
 | ------------------------------ | ------------------------------------------------------ |
@@ -44,7 +44,7 @@ Verify the accounting API:
 curl http://localhost:8080/health
 ```
 
-Open http://localhost:3000, then **Open dashboard**. Upload a file or **Process samples**. **Review** opens a dialog (original on the left, draft on the right). **Save & re-check** does not call the LLM again. **Register** saves first, then POSTs the saved draft to the mock accounting API.
+Open http://localhost:3000, then **Open dashboard**. **Upload invoice** to extract a PDF or scan. **Review** opens a dialog (original on the left, draft on the right). **Save & re-check** does not call the LLM again. **Register** saves first, then POSTs the saved draft to the mock accounting API.
 
 ## Next.js API
 
@@ -52,40 +52,29 @@ The dashboard talks to **Next.js App Router** routes under `src/app/api/` (this 
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `POST` | `/api/invoices/extract` | Extract a file or bundled sample into a job |
+| `POST` | `/api/invoices/extract` | Extract an uploaded file into a job |
 | `GET` | `/api/invoices` | List jobs (re-checks open jobs against booked invoices) |
 | `GET` | `/api/invoices/:id` | One job (re-annotates issues unless failed/registered) |
 | `PATCH` | `/api/invoices/:id` | Replace the draft and re-verify (no second LLM call) |
 | `POST` | `/api/invoices/:id/register` | POST the **saved** draft to the accounting API |
 | `GET` | `/api/partners` | Partner master (proxy of `GET :8080/partners`) |
-| `GET` | `/api/samples` | Filenames in `invoices/` |
 | `GET` | `/api/files/:name` | Original upload from `uploads/` (PDF or image) |
 
 Job `status`: `extracted` → `needs_review` \| `ready` → `registered` \| `failed`. Register is only allowed when status is `ready` and there are no blocker issues.
 
 ### `POST /api/invoices/extract`
 
-Two body shapes:
-
-**Upload (multipart)**
+Multipart upload only (`file` field).
 
 ```bash
 curl -sS -X POST http://localhost:3000/api/invoices/extract \
-  -F "file=@invoices/invoice_01.pdf"
-```
-
-**Bundled sample (JSON)** — reads `invoices/<name>` on disk:
-
-```bash
-curl -sS -X POST http://localhost:3000/api/invoices/extract \
-  -H 'Content-Type: application/json' \
-  -d '{"sample":"invoice_01.pdf"}'
+  -F "file=@/path/to/invoice.pdf"
 ```
 
 | Status | Body |
 | --- | --- |
 | `201` | `{ "job": IntakeJob }` |
-| `400` | `{ "error": "..." }` missing `file` / `sample` |
+| `400` | `{ "error": "..." }` missing `file` |
 | `500` | `{ "error": "..." }` extraction or I/O failure |
 
 ### `GET /api/invoices`
@@ -185,14 +174,6 @@ curl -sS http://localhost:3000/api/partners
 
 `200` → `{ "partners": [{ "partner_code", "name", "aliases", "registration_no" }] }`. `502` if the mock API is down.
 
-### `GET /api/samples`
-
-```bash
-curl -sS http://localhost:3000/api/samples
-```
-
-`200` → `{ "samples": ["invoice_01.pdf", ...] }`. `404` if `invoices/` is missing.
-
 ### `GET /api/files/:name`
 
 Serves a file previously written under `uploads/` (basename only). Used as `job.document_url`.
@@ -225,7 +206,7 @@ Jobs live in memory in the Next.js process. Restarting `pnpm dev` clears them.
 
 ## Demo (≤ 3 minutes)
 
-Do not start the recording on an empty queue if you need all 12 — extraction takes several minutes. Process samples first (or process `invoice_10.jpg`, `invoice_09.pdf`, `invoice_01.pdf`, `invoice_07.jpg`, and one clean file such as `invoice_06.jpg`), then record.
+Do not start the recording on an empty queue if you need several invoices — extraction takes several minutes. Upload the assignment files first (for example `invoice_10.jpg`, `invoice_09.pdf`, `invoice_01.pdf`, `invoice_07.jpg`, and one clean file such as `invoice_06.jpg`), then record.
 
 1. **Queue** — 12 jobs. Point at Flags: `0 / 1 warn` vs a blocker. Status **needs review** on `invoice_10.jpg` (no partner).
 2. **Blocker (10)** — Open review. Register is disabled. Supplier 新星ロジスティクス is not in the master; we did not guess a `partner_code`.

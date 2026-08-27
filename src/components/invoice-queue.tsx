@@ -57,7 +57,7 @@ function warningCount(job: IntakeJob): number {
 export function InvoiceQueue() {
   const [jobs, setJobs] = useState<IntakeJob[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<"upload" | "samples" | null>(null);
+  const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [reviewId, setReviewId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -83,21 +83,9 @@ export function InvoiceQueue() {
     });
   }, [refresh]);
 
-  async function extractSample(sample: string) {
-    const res = await fetch("/api/invoices/extract", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sample }),
-    });
-    const body = (await res.json()) as { error?: string };
-    if (!res.ok) {
-      throw new Error(body.error ?? `Failed to extract ${sample}`);
-    }
-  }
-
   async function onUpload(file: File) {
     setError(null);
-    setBusy("upload");
+    setBusy(true);
     setProgress(file.name);
     try {
       const form = new FormData();
@@ -114,35 +102,9 @@ export function InvoiceQueue() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
-      setBusy(null);
+      setBusy(false);
       setProgress(null);
       if (fileRef.current) fileRef.current.value = "";
-    }
-  }
-
-  async function onProcessSamples() {
-    setError(null);
-    setBusy("samples");
-    try {
-      const listRes = await fetch("/api/samples");
-      const listBody = (await listRes.json()) as {
-        samples?: string[];
-        error?: string;
-      };
-      if (!listRes.ok) {
-        throw new Error(listBody.error ?? "Could not list sample invoices");
-      }
-      const samples = listBody.samples ?? [];
-      for (let i = 0; i < samples.length; i++) {
-        setProgress(`${samples[i]} (${i + 1}/${samples.length})`);
-        await extractSample(samples[i]);
-        await refresh();
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Sample processing failed");
-    } finally {
-      setBusy(null);
-      setProgress(null);
     }
   }
 
@@ -160,9 +122,8 @@ export function InvoiceQueue() {
         <CardHeader>
           <CardTitle>Add invoices</CardTitle>
           <CardDescription>
-            Upload a PDF or scan, or run the twelve sample invoices from{" "}
-            <code className="font-mono text-xs">invoices/</code>. Nothing is
-            posted until you review and register.
+            Upload a PDF or scan. Nothing is posted until you review and
+            register.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-3">
@@ -178,18 +139,10 @@ export function InvoiceQueue() {
           />
           <Button
             type="button"
-            disabled={busy !== null}
+            disabled={busy}
             onClick={() => fileRef.current?.click()}
           >
-            {busy === "upload" ? "Extracting…" : "Upload invoice"}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={busy !== null}
-            onClick={() => void onProcessSamples()}
-          >
-            {busy === "samples" ? "Processing samples…" : "Process samples"}
+            {busy ? "Extracting…" : "Upload invoice"}
           </Button>
           {progress ? (
             <span className="text-muted-foreground text-sm">{progress}</span>

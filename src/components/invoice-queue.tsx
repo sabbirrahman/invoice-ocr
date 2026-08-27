@@ -28,19 +28,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { IntakeJob, JobStatus } from "@/lib/domain/schema";
+import { Separator } from "./ui/separator";
 
 const yen = new Intl.NumberFormat("ja-JP");
 
 function statusBadge(status: JobStatus) {
   switch (status) {
     case "ready":
-      return <Badge>ready</Badge>;
+      return <Badge>Ready</Badge>;
     case "registered":
-      return <Badge variant="secondary">registered</Badge>;
+      return <Badge variant="secondary">Registered</Badge>;
     case "failed":
-      return <Badge variant="destructive">failed</Badge>;
+      return <Badge variant="destructive">Failed</Badge>;
     case "needs_review":
-      return <Badge variant="outline">needs review</Badge>;
+      return <Badge variant="outline">Needs Review</Badge>;
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
@@ -83,24 +84,46 @@ export function InvoiceQueue() {
     });
   }, [refresh]);
 
-  async function onUpload(file: File) {
+  async function extractFile(file: File): Promise<void> {
+    const form = new FormData();
+    form.set("file", file);
+    const res = await fetch("/api/invoices/extract", {
+      method: "POST",
+      body: form,
+    });
+    const body = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      throw new Error(body.error ?? "Upload failed");
+    }
+  }
+
+  async function onUpload(fileList: FileList) {
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
+
     setError(null);
     setBusy(true);
-    setProgress(file.name);
+    const failures: string[] = [];
+
     try {
-      const form = new FormData();
-      form.set("file", file);
-      const res = await fetch("/api/invoices/extract", {
-        method: "POST",
-        body: form,
-      });
-      const body = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        throw new Error(body.error ?? "Upload failed");
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setProgress(
+          files.length === 1
+            ? file.name
+            : `${file.name} (${i + 1}/${files.length})`,
+        );
+        try {
+          await extractFile(file);
+          await refresh();
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Upload failed";
+          failures.push(`${file.name}: ${message}`);
+        }
       }
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      if (failures.length > 0) {
+        setError(failures.join(" · "));
+      }
     } finally {
       setBusy(false);
       setProgress(null);
@@ -118,23 +141,25 @@ export function InvoiceQueue() {
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Add invoices</CardTitle>
-          <CardDescription>
-            Upload a PDF or scan. Nothing is posted until you review and
-            register.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-5">
+        <div className="w-full max-w-2xl space-y-1 sm:w-auto">
+          <h2 className="font-bold text-2xl capitalize">Invoice Intake</h2>
+          <p className="text-muted-foreground text-sm">
+            Upload one or more PDFs or scans. Nothing will be posted until you
+            review and register.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
           <input
             ref={fileRef}
             type="file"
+            multiple
             accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
             className="hidden"
             onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void onUpload(file);
+              const selected = e.target.files;
+              if (selected && selected.length > 0) void onUpload(selected);
             }}
           />
           <Button
@@ -142,13 +167,13 @@ export function InvoiceQueue() {
             disabled={busy}
             onClick={() => fileRef.current?.click()}
           >
-            {busy ? "Extracting…" : "Upload invoice"}
+            {busy ? "Extracting…" : "Upload invoices"}
           </Button>
           {progress ? (
             <span className="text-muted-foreground text-sm">{progress}</span>
           ) : null}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {error ? (
         <p className="text-destructive text-sm" role="alert">
@@ -156,61 +181,70 @@ export function InvoiceQueue() {
         </p>
       ) : null}
 
-      <Card className="min-h-0 flex-1">
-        <CardHeader>
-          <CardTitle>Queue</CardTitle>
-          <CardDescription>
-            {jobs.length === 0
-              ? "No jobs yet."
-              : `${jobs.length} job${jobs.length === 1 ? "" : "s"}`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>File</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Partner</TableHead>
-                <TableHead>Invoice #</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Flags</TableHead>
-                <TableHead className="text-right"> </TableHead>
+      <Separator />
+
+      <div className="flex items-center justify-between gap-4">
+        <h3 className="font-bold text-lg capitalize">Queue</h3>
+        <p className="text-muted-foreground text-sm">
+          {jobs.length === 0
+            ? "No jobs yet."
+            : `${jobs.length} job${jobs.length === 1 ? "" : "s"}`}
+        </p>
+      </div>
+
+      <div className="border rounded-md mb-20">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>File</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Partner</TableHead>
+              <TableHead>Invoice #</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+              <TableHead className="text-right">Flags</TableHead>
+              <TableHead className="text-right"> </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {jobs.map((job) => (
+              <TableRow key={job.id}>
+                <TableCell className="font-mono text-xs">
+                  {job.source_filename}
+                </TableCell>
+                <TableCell>{statusBadge(job.status)}</TableCell>
+                <TableCell>{job.draft?.partner_code ?? "—"}</TableCell>
+                <TableCell className="font-mono text-xs">
+                  {job.draft?.invoice_number || "—"}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {job.draft ? `¥${yen.format(job.draft.total_amount)}` : "—"}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {blockerCount(job)}
+                  {warningCount(job) ? ` / ${warningCount(job)} warn` : ""}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setReviewId(job.id)}
+                  >
+                    Review
+                  </Button>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {jobs.map((job) => (
-                <TableRow key={job.id}>
-                  <TableCell className="font-mono text-xs">
-                    {job.source_filename}
-                  </TableCell>
-                  <TableCell>{statusBadge(job.status)}</TableCell>
-                  <TableCell>{job.draft?.partner_code ?? "—"}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {job.draft?.invoice_number || "—"}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {job.draft ? `¥${yen.format(job.draft.total_amount)}` : "—"}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {blockerCount(job)}
-                    {warningCount(job) ? ` / ${warningCount(job)} warn` : ""}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="link"
-                      size="sm"
-                      onClick={() => setReviewId(job.id)}
-                    >
-                      Review
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            ))}
+
+            {jobs.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-40">
+                  No jobs yet.
+                </TableCell>
+              </TableRow>
+            ) : null}
+          </TableBody>
+        </Table>
+      </div>
 
       <Dialog
         open={reviewId !== null}

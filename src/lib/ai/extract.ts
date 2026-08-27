@@ -28,7 +28,7 @@ function mediaTypeFor(input: ExtractInput): string {
  * Model/provider come from getModel() (env-swappable).
  *
  * Uses generateText + Output.object (AI SDK 7). Mapping to partner_code /
- * tax_code happens after this, in our code — not in the prompt.
+ * tax_code happens after this, in our code - not in the prompt.
  */
 export async function extractInvoice(
   input: ExtractInput,

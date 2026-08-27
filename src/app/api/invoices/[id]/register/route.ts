@@ -94,7 +94,7 @@ export async function POST(_request: Request, { params }: Params) {
       );
     }
   } catch {
-    // If list fails, still attempt register — API will enforce uniqueness
+    // If list fails, still attempt register - API will enforce uniqueness
   }
 
   const payload: AccountingInvoicePayload = {

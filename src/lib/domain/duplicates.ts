@@ -64,7 +64,7 @@ export function duplicateIssues(
       issues.push({
         code: "QUEUE_DUPLICATE",
         severity: "warning",
-        message: `Same partner + invoice number as ${others.map((j) => j.source_filename).join(", ")} — likely a duplicate (e.g. PDF and scan of the same invoice)`,
+        message: `Same partner + invoice number as ${others.map((j) => j.source_filename).join(", ")} - likely a duplicate (e.g. PDF and scan of the same invoice)`,
         field: "invoice_number",
         details: { other_jobs: others.map((j) => j.id) },
       });

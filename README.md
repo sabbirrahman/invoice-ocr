@@ -6,7 +6,7 @@ Human-in-the-loop intake for Sample Trading Co. The app extracts Japanese invoic
 
 - Node.js 20+
 - pnpm 11 (`packageManager` is set in `package.json`)
-- Python 3.9+ (stdlib only — no pip)
+- Python 3.9+ (stdlib only - no pip)
 - A Gemini API key by default ([Google AI Studio](https://aistudio.google.com/apikey)). OpenAI or Anthropic also work via env.
 
 ## Setup
@@ -17,7 +17,7 @@ cp .env.example .env
 pnpm install
 ```
 
-The assignment pack includes 12 sample invoices. Upload them from the dashboard — the app does not read a bundled `invoices/` folder.
+The assignment pack includes 12 sample invoices. Upload them from the dashboard - the app does not read a bundled `invoices/` folder.
 
 | Variable                       | Purpose                                                |
 | ------------------------------ | ------------------------------------------------------ |
@@ -44,21 +44,21 @@ Verify the accounting API:
 curl http://localhost:8080/health
 ```
 
-Open http://localhost:3000, then **Open dashboard**. **Upload invoice** to extract a PDF or scan. **Review** opens a dialog (original on the left, draft on the right). **Save & re-check** does not call the LLM again. **Register** saves first, then POSTs the saved draft to the mock accounting API.
+Open http://localhost:3000, then **Open dashboard**. **Upload invoices** to extract one or more PDFs or scans. **Review** opens a dialog (original on the left, draft on the right). **Save & re-check** does not call the LLM again. **Register** saves first, then POSTs the saved draft to the mock accounting API.
 
 ## Next.js API
 
 The dashboard talks to **Next.js App Router** routes under `src/app/api/` (this is not Nest.js). Those routes own the intake queue (in-memory) and call the mock accounting API at `:8080` via `src/lib/accounting/client.ts`. Base URL: `http://localhost:3000`. No auth on these routes.
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `POST` | `/api/invoices/extract` | Extract an uploaded file into a job |
-| `GET` | `/api/invoices` | List jobs (re-checks open jobs against booked invoices) |
-| `GET` | `/api/invoices/:id` | One job (re-annotates issues unless failed/registered) |
-| `PATCH` | `/api/invoices/:id` | Replace the draft and re-verify (no second LLM call) |
-| `POST` | `/api/invoices/:id/register` | POST the **saved** draft to the accounting API |
-| `GET` | `/api/partners` | Partner master (proxy of `GET :8080/partners`) |
-| `GET` | `/api/files/:name` | Original upload from `uploads/` (PDF or image) |
+| Method  | Path                         | Purpose                                                 |
+| ------- | ---------------------------- | ------------------------------------------------------- |
+| `POST`  | `/api/invoices/extract`      | Extract an uploaded file into a job                     |
+| `GET`   | `/api/invoices`              | List jobs (re-checks open jobs against booked invoices) |
+| `GET`   | `/api/invoices/:id`          | One job (re-annotates issues unless failed/registered)  |
+| `PATCH` | `/api/invoices/:id`          | Replace the draft and re-verify (no second LLM call)    |
+| `POST`  | `/api/invoices/:id/register` | POST the **saved** draft to the accounting API          |
+| `GET`   | `/api/partners`              | Partner master (proxy of `GET :8080/partners`)          |
+| `GET`   | `/api/files/:name`           | Original upload from `uploads/` (PDF or image)          |
 
 Job `status`: `extracted` → `needs_review` \| `ready` → `registered` \| `failed`. Register is only allowed when status is `ready` and there are no blocker issues.
 
@@ -71,11 +71,11 @@ curl -sS -X POST http://localhost:3000/api/invoices/extract \
   -F "file=@/path/to/invoice.pdf"
 ```
 
-| Status | Body |
-| --- | --- |
-| `201` | `{ "job": IntakeJob }` |
-| `400` | `{ "error": "..." }` missing `file` |
-| `500` | `{ "error": "..." }` extraction or I/O failure |
+| Status | Body                                           |
+| ------ | ---------------------------------------------- |
+| `201`  | `{ "job": IntakeJob }`                         |
+| `400`  | `{ "error": "..." }` missing `file`            |
+| `500`  | `{ "error": "..." }` extraction or I/O failure |
 
 ### `GET /api/invoices`
 
@@ -91,10 +91,10 @@ curl -sS http://localhost:3000/api/invoices
 curl -sS http://localhost:3000/api/invoices/<job_id>
 ```
 
-| Status | Body |
-| --- | --- |
-| `200` | `{ "job": IntakeJob }` |
-| `404` | `{ "error": "Job not found" }` |
+| Status | Body                           |
+| ------ | ------------------------------ |
+| `200`  | `{ "job": IntakeJob }`         |
+| `404`  | `{ "error": "Job not found" }` |
 
 ### `PATCH /api/invoices/:id`
 
@@ -127,25 +127,25 @@ curl -sS -X PATCH http://localhost:3000/api/invoices/<job_id> \
   }'
 ```
 
-| Field | Type |
-| --- | --- |
-| `partner_code` | `string \| null` |
-| `invoice_number` | `string` |
-| `issue_date` / `due_date` | `YYYY-MM-DD` (`due_date` may be `null`) |
-| `currency` | `"JPY"` |
-| `lines[].description` | `string` |
-| `lines[].quantity` / `unit_price` | `integer \| null` |
-| `lines[].unit` | `string` |
-| `lines[].amount` | integer JPY |
-| `lines[].tax_code` | `"T10"` \| `"T08"` |
-| `subtotal` / `tax_amount` / `total_amount` | integer JPY |
+| Field                                      | Type                                    |
+| ------------------------------------------ | --------------------------------------- |
+| `partner_code`                             | `string \| null`                        |
+| `invoice_number`                           | `string`                                |
+| `issue_date` / `due_date`                  | `YYYY-MM-DD` (`due_date` may be `null`) |
+| `currency`                                 | `"JPY"`                                 |
+| `lines[].description`                      | `string`                                |
+| `lines[].quantity` / `unit_price`          | `integer \| null`                       |
+| `lines[].unit`                             | `string`                                |
+| `lines[].amount`                           | integer JPY                             |
+| `lines[].tax_code`                         | `"T10"` \| `"T08"`                      |
+| `subtotal` / `tax_amount` / `total_amount` | integer JPY                             |
 
-| Status | Body |
-| --- | --- |
-| `200` | `{ "job": IntakeJob }` |
-| `400` | `{ "error": "Invalid draft", "details": ... }` |
-| `404` | `{ "error": "Job not found" }` |
-| `409` | `{ "error": "Registered invoices cannot be edited" }` |
+| Status | Body                                                  |
+| ------ | ----------------------------------------------------- |
+| `200`  | `{ "job": IntakeJob }`                                |
+| `400`  | `{ "error": "Invalid draft", "details": ... }`        |
+| `404`  | `{ "error": "Job not found" }`                        |
+| `409`  | `{ "error": "Registered invoices cannot be edited" }` |
 
 ### `POST /api/invoices/:id/register`
 
@@ -155,14 +155,14 @@ No body. Uses the **saved** server draft (unsaved form fields are ignored). Forw
 curl -sS -X POST http://localhost:3000/api/invoices/<job_id>/register
 ```
 
-| Status | Body |
-| --- | --- |
-| `201` | `{ "job": IntakeJob, "record": RegisteredInvoice }` |
-| `400` | `{ "error": "No draft to register" }` |
-| `404` | `{ "error": "Job not found" }` |
-| `409` | already registered, or duplicate (`DUPLICATE_INVOICE` + `job`) |
-| `422` | blockers remain, or missing `partner_code` / `due_date` |
-| other | accounting API error: `{ "error": "<code>", "message": "...", "job": IntakeJob }` |
+| Status | Body                                                                              |
+| ------ | --------------------------------------------------------------------------------- |
+| `201`  | `{ "job": IntakeJob, "record": RegisteredInvoice }`                               |
+| `400`  | `{ "error": "No draft to register" }`                                             |
+| `404`  | `{ "error": "Job not found" }`                                                    |
+| `409`  | already registered, or duplicate (`DUPLICATE_INVOICE` + `job`)                    |
+| `422`  | blockers remain, or missing `partner_code` / `due_date`                           |
+| other  | accounting API error: `{ "error": "<code>", "message": "...", "job": IntakeJob }` |
 
 `RegisteredInvoice`: `accounting_id`, `partner_code`, `invoice_number`, dates, amounts, `line_count`.
 
@@ -188,38 +188,21 @@ curl -sS -o /tmp/doc.pdf http://localhost:3000/api/files/<stored_filename>
 
 Returned by extract / list / get / patch / register:
 
-| Field | Notes |
-| --- | --- |
-| `id` | Job id (`job_…`) |
-| `source_filename` / `media_type` | Original file |
-| `document_url` | `/api/files/…` |
-| `status` | see above |
-| `extracted` | LLM output (printed totals, handwriting, confidence) or `null` |
-| `draft` | Editable API-shaped invoice or `null` |
-| `partner_match` | Match result; `partner_code` is `null` if unmatched |
-| `issues` | `{ code, severity: "blocker" \| "warning", message, field?, details? }` |
-| `accounting_id` | Set after a successful register |
-| `register_error` | Last register failure, if any |
-| `created_at` / `updated_at` | ISO timestamps |
+| Field                            | Notes                                                                   |
+| -------------------------------- | ----------------------------------------------------------------------- |
+| `id`                             | Job id (`job_…`)                                                        |
+| `source_filename` / `media_type` | Original file                                                           |
+| `document_url`                   | `/api/files/…`                                                          |
+| `status`                         | see above                                                               |
+| `extracted`                      | LLM output (printed totals, handwriting, confidence) or `null`          |
+| `draft`                          | Editable API-shaped invoice or `null`                                   |
+| `partner_match`                  | Match result; `partner_code` is `null` if unmatched                     |
+| `issues`                         | `{ code, severity: "blocker" \| "warning", message, field?, details? }` |
+| `accounting_id`                  | Set after a successful register                                         |
+| `register_error`                 | Last register failure, if any                                           |
+| `created_at` / `updated_at`      | ISO timestamps                                                          |
 
 Jobs live in memory in the Next.js process. Restarting `pnpm dev` clears them.
-
-## Demo (≤ 3 minutes)
-
-Do not start the recording on an empty queue if you need several invoices — extraction takes several minutes. Upload the assignment files first (for example `invoice_10.jpg`, `invoice_09.pdf`, `invoice_01.pdf`, `invoice_07.jpg`, and one clean file such as `invoice_06.jpg`), then record.
-
-1. **Queue** — 12 jobs. Point at Flags: `0 / 1 warn` vs a blocker. Status **needs review** on `invoice_10.jpg` (no partner).
-2. **Blocker (10)** — Open review. Register is disabled. Supplier 新星ロジスティクス is not in the master; we did not guess a `partner_code`.
-3. **Warning (09)** — Printed total ¥147,497 vs draft ¥147,496 (floor tax). We keep the recalculated total so the API will accept it.
-4. **Duplicate warning (01 / 07)** — Same P-1001 + YM-2026-0107. Warning, not a blocker, so the first one can still be booked.
-5. **Register** — Open a unique ready job (e.g. `invoice_06.jpg`). Save if you touch a field, then Register. Status becomes **registered**.
-6. **Duplicate rejected** — Register `invoice_01.pdf`, then try `invoice_07.jpg`. Second call fails (409 / `DUPLICATE_INVOICE`); the remaining job becomes a blocker.
-
-Reset bookings without restarting extraction:
-
-```bash
-curl -X DELETE http://localhost:8080/invoices -H 'X-API-Key: demo-key-1234'
-```
 
 Jobs are in-memory in the Next process. Restarting `pnpm dev` clears the queue; the accounting API likewise forgets bookings on restart.
 
@@ -232,9 +215,3 @@ Jobs are in-memory in the Next process. Restarting `pnpm dev` clears the queue; 
 | `pnpm test`                     | Vitest (verify, partner match, duplicates, draft mapping) |
 | `pnpm lint`                     | Biome                                                     |
 | `pnpm build`                    | Production Next build                                     |
-
-## Notes
-
-- `accounting_api.py` is the take-home mock. **Do not change its behaviour.**
-- Totals posted to the API are always recomputed from lines (floor tax per `T10` / `T08`), not taken from the model or the printed 合計.
-- Design notes and the 12-invoice table: [`SUBMISSION.md`](./SUBMISSION.md).

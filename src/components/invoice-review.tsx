@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Trash2, Plus } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -37,15 +38,19 @@ const EMPTY_LINE: InvoiceLine = {
 function statusBadge(status: JobStatus) {
   switch (status) {
     case "ready":
-      return <Badge>ready</Badge>;
+      return <Badge>Ready</Badge>;
     case "registered":
-      return <Badge variant="secondary">registered</Badge>;
+      return <Badge variant="secondary">Registered</Badge>;
     case "failed":
-      return <Badge variant="destructive">failed</Badge>;
+      return <Badge variant="destructive">Failed</Badge>;
     case "needs_review":
-      return <Badge variant="outline">needs review</Badge>;
+      return <Badge variant="outline">Needs Review</Badge>;
     default:
-      return <Badge variant="outline">{status}</Badge>;
+      return (
+        <Badge variant="outline" className="capitalize">
+          {status}
+        </Badge>
+      );
   }
 }
 
@@ -347,7 +352,7 @@ export function InvoiceReview({
           <CardContent className="flex flex-col gap-4">
             {!draft ? (
               <p className="text-sm text-muted-foreground">
-                No draft to edit. Extraction failed — go back to the queue and
+                No draft to edit. Extraction failed - go back to the queue and
                 retry after fixing the error.
               </p>
             ) : (
@@ -420,23 +425,8 @@ export function InvoiceReview({
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <Label>Lines</Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={readOnly}
-                      onClick={() =>
-                        updateDraft({
-                          lines: [
-                            ...draft.lines,
-                            { ...EMPTY_LINE, uid: crypto.randomUUID() },
-                          ],
-                        })
-                      }
-                    >
-                      Add line
-                    </Button>
                   </div>
+
                   {draft.lines.map((line, index) => (
                     <div
                       key={line.uid}
@@ -505,21 +495,43 @@ export function InvoiceReview({
                           </option>
                         ))}
                       </select>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={readOnly || draft.lines.length === 1}
-                        onClick={() =>
-                          updateDraft({
-                            lines: draft.lines.filter((_, i) => i !== index),
-                          })
-                        }
-                      >
-                        Remove
-                      </Button>
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          disabled={readOnly || draft.lines.length === 1}
+                          onClick={() =>
+                            updateDraft({
+                              lines: draft.lines.filter((_, i) => i !== index),
+                            })
+                          }
+                        >
+                          <Trash2 />
+                        </Button>
+                      </div>
                     </div>
                   ))}
+
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={readOnly}
+                      onClick={() =>
+                        updateDraft({
+                          lines: [
+                            ...draft.lines,
+                            { ...EMPTY_LINE, uid: crypto.randomUUID() },
+                          ],
+                        })
+                      }
+                    >
+                      <Plus />
+                      Add Line
+                    </Button>
+                  </div>
                 </div>
 
                 <dl className="grid grid-cols-3 gap-2 text-sm">
@@ -552,10 +564,11 @@ export function InvoiceReview({
                   <Button
                     type="button"
                     variant="outline"
+                    className="w-36"
                     disabled={readOnly || busy !== null}
                     onClick={() => void onSave()}
                   >
-                    {busy === "save" ? "Saving…" : "Save & re-check"}
+                    {busy === "save" ? "Saving…" : "Save & Re-check"}
                   </Button>
                   <Button
                     type="button"

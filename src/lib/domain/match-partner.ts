@@ -11,7 +11,7 @@ function normalize(value: string): string {
 
 /**
  * Match a printed supplier name / registration number to the partner master.
- * Never invents a partner_code — unmatched invoices stay needs_review.
+ * Never invents a partner_code - unmatched invoices stay needs_review.
  */
 export function matchPartner(
   partners: Partner[],
@@ -82,7 +82,7 @@ export function matchPartner(
     return {
       partner_code: null,
       confidence: "low",
-      reason: `Ambiguous match for "${name}" — human must choose`,
+      reason: `Ambiguous match for "${name}" - human must choose`,
       candidates: fuzzy.map((p) => ({
         partner_code: p.partner_code,
         name: p.name,

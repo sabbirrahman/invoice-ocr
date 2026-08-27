@@ -28,7 +28,7 @@ export async function buildJobIssues(
       code: "LOW_CONFIDENCE",
       severity: "warning",
       message:
-        "Model reported low confidence on one or more fields — please review carefully",
+        "Model reported low confidence on one or more fields - please review carefully",
     });
   }
 
@@ -50,7 +50,7 @@ export async function buildJobIssues(
         job.extracted.supplier_registration_no
           ? ` (${job.extracted.supplier_registration_no})`
           : ""
-      }. Do not guess — skip or wait for master data.`,
+      }. Do not guess - skip or wait for master data.`,
     };
     if (idx >= 0) issues[idx] = { ...issues[idx], ...detail };
     else issues.push(detail);

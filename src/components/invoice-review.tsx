@@ -38,13 +38,24 @@ const EMPTY_LINE: InvoiceLine = {
 function statusBadge(status: JobStatus) {
   switch (status) {
     case "ready":
-      return <Badge>Ready</Badge>;
+      return (
+        <Badge className="bg-green-600 dark:bg-green-900 text-white">
+          Ready
+        </Badge>
+      );
     case "registered":
       return <Badge variant="secondary">Registered</Badge>;
     case "failed":
       return <Badge variant="destructive">Failed</Badge>;
     case "needs_review":
-      return <Badge variant="outline">Needs Review</Badge>;
+      return (
+        <Badge
+          className="bg-yellow-600 dark:bg-yellow-900 text-white"
+          variant="outline"
+        >
+          Needs Review
+        </Badge>
+      );
     default:
       return (
         <Badge variant="outline" className="capitalize">

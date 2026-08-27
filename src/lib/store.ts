@@ -30,6 +30,10 @@ export function saveJob(job: IntakeJob): IntakeJob {
   return job;
 }
 
+export function deleteJob(id: string): boolean {
+  return jobs.delete(id);
+}
+
 export function newJobId(): string {
   return `job_${crypto.randomUUID()}`;
 }

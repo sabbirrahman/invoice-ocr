@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-
-import { statusFromIssues, buildJobIssues } from "@/lib/intake/issues";
 import { InvoiceDraftSchema } from "@/lib/domain/schema";
-import { saveJob, getJob } from "@/lib/store";
+import { buildJobIssues, statusFromIssues } from "@/lib/intake/issues";
+import { deleteJob, getJob, saveJob } from "@/lib/store";
 
 export const runtime = "nodejs";
 
@@ -66,4 +65,20 @@ export async function PATCH(request: Request, { params }: Params) {
   });
 
   return NextResponse.json({ job: updated });
+}
+
+export async function DELETE(_request: Request, { params }: Params) {
+  const { id } = await params;
+  const job = getJob(id);
+  if (!job) {
+    return NextResponse.json({ error: "Job not found" }, { status: 404 });
+  }
+  if (job.status !== "failed") {
+    return NextResponse.json(
+      { error: "Only failed jobs can be deleted" },
+      { status: 409 },
+    );
+  }
+  deleteJob(id);
+  return NextResponse.json({ ok: true });
 }

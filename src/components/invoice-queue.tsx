@@ -1,17 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { usePageBreadcrumb } from "@/components/custom/breadcrumb";
 import { InvoiceReview } from "@/components/invoice-review";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -35,13 +29,24 @@ const yen = new Intl.NumberFormat("ja-JP");
 function statusBadge(status: JobStatus) {
   switch (status) {
     case "ready":
-      return <Badge>Ready</Badge>;
+      return (
+        <Badge className="bg-green-600 dark:bg-green-900 text-white">
+          Ready
+        </Badge>
+      );
     case "registered":
       return <Badge variant="secondary">Registered</Badge>;
     case "failed":
       return <Badge variant="destructive">Failed</Badge>;
     case "needs_review":
-      return <Badge variant="outline">Needs Review</Badge>;
+      return (
+        <Badge
+          className="bg-yellow-600 dark:bg-yellow-900 text-white"
+          variant="outline"
+        >
+          Needs Review
+        </Badge>
+      );
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
@@ -61,6 +66,7 @@ export function InvoiceQueue() {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [reviewId, setReviewId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   usePageBreadcrumb({
@@ -128,6 +134,24 @@ export function InvoiceQueue() {
       setBusy(false);
       setProgress(null);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function onDeleteFailed(id: string) {
+    setError(null);
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/invoices/${id}`, { method: "DELETE" });
+      const body = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        throw new Error(body.error ?? "Delete failed");
+      }
+      if (reviewId === id) setReviewId(null);
+      setJobs((current) => current.filter((job) => job.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -224,13 +248,28 @@ export function InvoiceQueue() {
                   {warningCount(job) ? ` / ${warningCount(job)} warn` : ""}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setReviewId(job.id)}
-                  >
-                    Review
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setReviewId(job.id)}
+                    >
+                      Review
+                    </Button>
+                    {job.status === "failed" ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
+                        aria-label={`Delete ${job.source_filename}`}
+                        className="text-destructive hover:text-destructive"
+                        disabled={deletingId === job.id}
+                        onClick={() => void onDeleteFailed(job.id)}
+                      >
+                        <Trash2 />
+                      </Button>
+                    ) : null}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
